@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
-    firebase_credentials_path: str = "./serviceAccountKey.json"
+    firebase_credentials_json: Optional[str] = None
     environment: str = "development"
     log_level: str = "INFO"
     demo_mode: bool = False
@@ -14,5 +14,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "allow"  # Allow extra fields
 
 settings = Settings()
