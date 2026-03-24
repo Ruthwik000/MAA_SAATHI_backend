@@ -1,16 +1,39 @@
+# Environment
+.env
+*.env
+
+# Firebase credentials (keep out of git)
+serviceAccountKey.json
+saathi-f94ab-firebase-adminsdk-fbsvc-27f9b9ab59.json
+*.json
+!examples/*.json
+!render.yaml
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 venv/
+env/
 ENV/
 .venv
-.env
-serviceAccountKey.json
-saathi-f94ab-firebase-adminsdk-fbsvc-27f9b9ab59.json
-*.json
-!examples/*.json
-*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files (don't deploy)
+test_*.py
+check_*.py
+demo_test.py

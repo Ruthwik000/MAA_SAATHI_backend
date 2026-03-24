@@ -1,92 +1,65 @@
-# VitalSync - Smart Health Monitoring System Backend
+# VitalSync - Smart Health Monitoring Backend
 
-Production-quality backend for IoT-based healthcare platform using ESP32 smart ring.
+IoT Ring health monitoring system with emergency alert capabilities.
 
 ## Features
 
-- IoT data ingestion from ESP32 devices
-- Health check simulation (frontend-triggered)
-- Health analytics and reporting
-- Severity-based emergency alert system
-- Firebase Firestore database
-- RESTful API with FastAPI
+- **IoT Vitals Storage**: ESP32 ring sends health data → stored in Firestore
+- **Emergency SOS Alerts**: Automatic SMS + Call alerts via Twilio
 
-## Tech Stack
-
-- Python 3.10+
-- FastAPI
-- Firebase Admin SDK
-- Uvicorn
-- Pydantic
-
-## Setup
+## Quick Start
 
 1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Configure Firebase:
-   - Download your Firebase service account key
-   - Save as `serviceAccountKey.json` in project root
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-Add Twilio values in `.env` to enable call/SMS features:
-
+2. Configure `.env`:
 ```env
-TWILIO_ACCOUNT_SID=...
-TWILIO_AUTH_TOKEN=...
-TWILIO_PHONE_NUMBER=+1XXXXXXXXXX
+DEMO_MODE=true
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_MESSAGING_SERVICE_SID=your_messaging_service_sid
 ```
 
-4. Run the server:
+3. Run server:
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Server runs at: http://localhost:8000
+## API Endpoints
 
-## API Documentation
-
-Interactive docs: http://localhost:8000/docs
-
-### Endpoints
-
-- `POST /api/v1/iot/daily-vitals` - Receive vitals from IoT device
-- `GET /api/v1/health/daily-vitals/{patientId}` - Get patient vitals
-- `POST /api/v1/health/check/{patientId}` - Simulate health check
-- `GET /api/v1/health/report/{patientId}` - Generate health report
-- `POST /api/v1/emergency/sos` - Create emergency alert
-- `GET /api/v1/alerts/{patientId}` - Get patient alerts
-- `PATCH /api/v1/alerts/{alertId}` - Update alert status
-- `POST /api/v1/communication/sms` - Send SMS
-- `POST /api/v1/communication/call` - Make voice calls
-- `POST /api/v1/communication/sos` - Priority-based SOS notify
-- `GET /health` - Health check
-
-## Project Structure
-
+### 1. Store IoT Vitals
 ```
-app/
-├── routes/          # API endpoints
-├── controllers/     # Request handlers
-├── services/        # Business logic
-├── schemas/         # Pydantic models
-├── config/          # Configuration
-└── utils/           # Utilities
+POST /api/v1/iot/daily-vitals
+```
+ESP32 sends health data (heart rate, SpO2, temperature, steps, etc.)
+
+### 2. Emergency SOS Alert
+```
+POST /api/v1/emergency/sos
+```
+Triggers SMS + Call to doctor and family contacts
+
+## ESP32 Configuration
+
+Update WiFi and server in `ringcode.c++`:
+```cpp
+const char* WIFI_SSID = "Hotspot";
+const char* WIFI_PASSWORD = "12345678";
+const char* SERVER_URL = "http://192.168.43.1:8000";
 ```
 
-## Architecture
+## Demo Mode
 
-- PUSH-BASED IoT model (devices send data to backend)
-- Backend never calls IoT devices
-- Health check is simulated (UX-driven)
-- Frontend uses GET APIs (refresh-based)
+Set `DEMO_MODE=true` to use in-memory storage (no Firebase required).
 
-## License
+## Production
 
-MIT
+Set `DEMO_MODE=false` and configure Firebase credentials path.
+
+## Test
+
+```bash
+python test_twilio.py
+```

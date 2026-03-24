@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import iot_routes, health_routes, alert_routes, communication_routes
+from app.routes import iot_routes, alert_routes
 from app.config.firebase import initialize_firebase
 from app.utils.logger import logger
+from app.config.settings import settings
 
 app = FastAPI(
     title="VitalSync API",
-    description="Smart Health Monitoring System Backend",
+    description="Smart Health Monitoring System - IoT Ring Backend",
     version="1.0.0"
 )
 
@@ -19,12 +20,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Firebase on startup
+# Initialize Firebase on startup (skip in demo mode)
 @app.on_event("startup")
 async def startup_event():
     try:
-        initialize_firebase()
-        logger.info("🚀 VitalSync backend started successfully")
+        if not settings.demo_mode:
+            initialize_firebase()
+            logger.info("🚀 VitalSync backend started with Firebase")
+        else:
+            logger.info("🎯 VitalSync backend started in DEMO MODE")
     except Exception as e:
         logger.error(f"Failed to start application: {str(e)}")
         raise
@@ -32,10 +36,9 @@ async def startup_event():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "VitalSync"}
+    mode = "demo" if settings.demo_mode else "production"
+    return {"status": "ok", "service": "VitalSync", "mode": mode}
 
-# Include routers
-app.include_router(iot_routes.router)
-app.include_router(health_routes.router)
-app.include_router(alert_routes.router)
-app.include_router(communication_routes.router)
+# Include only essential routers
+app.include_router(iot_routes.router)  # ESP32 sends vitals here
+app.include_router(alert_routes.router)  # ESP32 sends SOS alerts here

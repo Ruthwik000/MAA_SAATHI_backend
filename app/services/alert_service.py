@@ -1,99 +1,100 @@
 from typing import Optional
-
-from app.services.notification_service import notification_service
 from app.services.twilio_service import get_twilio_service
-from app.utils.communication_helpers import format_emergency_message
 from app.utils.logger import logger
 
 
 class AlertService:
-    """Handle emergency alert actions based on severity."""
+    """Handle emergency alerts - send SMS and Call directly via Twilio"""
 
     @staticmethod
-    def _build_recipients(
-        doctor_number: Optional[str],
-        family_numbers: list[str],
-    ) -> list[str]:
-        recipients = []
-        if doctor_number:
-            recipients.append(doctor_number)
-        recipients.extend(family_numbers)
-        return notification_service.unique_recipients(recipients)
+    def _format_emergency_message(patient_id: str, alert_type: str, location: dict) -> str:
+        """Format emergency message for SMS/Call"""
+        return (
+            f"🚨 EMERGENCY ALERT 🚨\n"
+            f"Patient: {patient_id}\n"
+            f"Type: {alert_type}\n"
+            f"Location: {location['lat']}, {location['lng']}\n"
+            f"Please respond immediately!"
+        )
 
-    @staticmethod
-    def _count_failed(results: list) -> int:
-        return sum(1 for result in results if result.status == "failed")
-
-    def process_alert(
+    def send_emergency_alerts(
         self,
-        severity: str,
         patient_id: str,
         alert_type: str,
         location: dict,
         doctor_number: Optional[str] = None,
         family_numbers: Optional[list[str]] = None,
         custom_message: Optional[str] = None,
-        sound_url: Optional[str] = None,
-        voice: str = "alice",
-        language: Optional[str] = None,
     ) -> list[str]:
-        """Process alert based on severity: LOW=>SMS, otherwise SMS+CALL."""
+        """Send SMS + Call to all contacts immediately"""
         actions: list[str] = []
-        recipients = self._build_recipients(doctor_number, family_numbers or [])
+        
+        # Build recipient list
+        recipients = []
+        if doctor_number:
+            recipients.append(doctor_number)
+        if family_numbers:
+            recipients.extend(family_numbers)
+        
+        # Remove duplicates
+        recipients = list(set(recipients))
 
         if not recipients:
-            logger.warning(
-                "No emergency contacts provided for patient %s; skipping notifications",
-                patient_id,
-            )
+            logger.warning(f"No emergency contacts for patient {patient_id}")
             return ["No emergency contacts configured"]
 
-        message = custom_message or format_emergency_message(
-            patient_name=patient_id,
-            emergency_type=alert_type,
-            location=f"{location['lat']}, {location['lng']}",
+        message = custom_message or self._format_emergency_message(
+            patient_id=patient_id,
+            alert_type=alert_type,
+            location=location,
         )
 
         try:
             twilio_service = get_twilio_service()
         except RuntimeError as exc:
-            logger.error("Twilio configuration error: %s", str(exc))
+            logger.error(f"Twilio configuration error: {str(exc)}")
             return [f"Notification failed: {str(exc)}"]
 
-        sms_results, call_results = notification_service.notify_by_priority(
-            priority=severity,
-            phone_numbers=recipients,
-            message=message,
-            sound_url=sound_url,
-            voice=voice,
-            language=language,
-            twilio_service=twilio_service,
+        # Send SMS to all contacts
+        sms_sent = 0
+        sms_failed = 0
+        for phone in recipients:
+            try:
+                result = twilio_service.send_sms(phone, message)
+                if result.status == "success":
+                    sms_sent += 1
+                    logger.info(f"SMS sent to {phone}")
+                else:
+                    sms_failed += 1
+                    logger.error(f"SMS failed to {phone}: {result.error}")
+            except Exception as e:
+                sms_failed += 1
+                logger.error(f"SMS error to {phone}: {str(e)}")
+
+        # Make calls to all contacts
+        call_sent = 0
+        call_failed = 0
+        for phone in recipients:
+            try:
+                result = twilio_service.make_call(phone, message)
+                if result.status == "success":
+                    call_sent += 1
+                    logger.info(f"Call initiated to {phone}")
+                else:
+                    call_failed += 1
+                    logger.error(f"Call failed to {phone}: {result.error}")
+            except Exception as e:
+                call_failed += 1
+                logger.error(f"Call error to {phone}: {str(e)}")
+
+        actions.append(f"SMS sent: {sms_sent}, failed: {sms_failed}")
+        actions.append(f"Calls initiated: {call_sent}, failed: {call_failed}")
+        
+        logger.critical(
+            f"🚨 Emergency alert processed for {patient_id}: {alert_type} | "
+            f"SMS: {sms_sent}/{len(recipients)}, Calls: {call_sent}/{len(recipients)}"
         )
-
-        sms_failed = self._count_failed(sms_results)
-        sms_sent = len(sms_results) - sms_failed
-
-        actions.append(f"SMS sent: {sms_sent}")
-        if sms_failed:
-            actions.append(f"SMS failed: {sms_failed}")
-
-        if severity == "LOW":
-            actions.append("Low priority: call skipped")
-            logger.info("LOW severity alert processed for patient %s (SMS only)", patient_id)
-            return actions
-
-        call_failed = self._count_failed(call_results)
-        call_sent = len(call_results) - call_failed
-
-        actions.append(f"Calls initiated: {call_sent}")
-        if call_failed:
-            actions.append(f"Calls failed: {call_failed}")
-
-        logger.warning(
-            "Escalated alert processed for patient %s (severity=%s, SMS+CALL)",
-            patient_id,
-            severity,
-        )
+        
         return actions
 
 

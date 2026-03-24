@@ -1,24 +1,29 @@
 from typing import Literal, Optional
+from pydantic import BaseModel, Field, field_validator
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
-
-from app.utils.communication_helpers import is_valid_phone_number
 
 class Location(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lng: float = Field(..., ge=-180, le=180)
 
+
+def is_valid_phone_number(phone: str) -> bool:
+    """Validate E.164 phone number format"""
+    if not phone.startswith('+'):
+        return False
+    digits = phone[1:]
+    return digits.isdigit() and 10 <= len(digits) <= 15
+
+
 class SOSRequest(BaseModel):
+    """Emergency SOS Alert from ESP32 IoT Ring"""
     patientId: str = Field(..., min_length=1)
     type: Literal["FALL", "LOW_SPO2", "HIGH_HEART_RATE", "MANUAL_SOS"]
     severity: Literal["LOW", "MEDIUM", "HIGH"]
     location: Location
     doctorNumber: Optional[str] = None
     familyNumbers: list[str] = Field(default_factory=list)
-    customMessage: Optional[str] = Field(default=None, min_length=1, max_length=1200)
-    soundUrl: Optional[HttpUrl] = None
-    voice: str = Field(default="alice", min_length=1, max_length=100)
-    language: Optional[str] = Field(default=None, max_length=20)
+    customMessage: Optional[str] = Field(default=None, max_length=1200)
 
     @field_validator("doctorNumber")
     @classmethod
@@ -38,20 +43,10 @@ class SOSRequest(BaseModel):
             raise ValueError(f"Invalid familyNumbers: {invalid}")
         return family_numbers
 
+
 class SOSResponse(BaseModel):
+    """Response after processing SOS alert"""
     success: bool
     message: str
     alertId: Optional[str] = None
     actions_taken: Optional[list[str]] = None
-
-class AlertData(BaseModel):
-    alertId: str
-    patientId: str
-    type: str
-    severity: str
-    status: str
-    location: dict
-    timestamp: str
-
-class AlertUpdateRequest(BaseModel):
-    status: Literal["active", "resolved"]
