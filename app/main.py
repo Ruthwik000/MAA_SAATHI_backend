@@ -25,13 +25,22 @@ app.add_middleware(
 async def startup_event():
     try:
         if not settings.demo_mode:
-            initialize_firebase()
-            logger.info("🚀 VitalSync backend started with Firebase")
+            try:
+                initialize_firebase()
+                logger.info("🚀 VitalSync backend started with Firebase")
+            except Exception as firebase_error:
+                logger.warning(f"Firebase initialization failed: {str(firebase_error)}")
+                logger.warning("⚠️ Falling back to DEMO MODE")
+                # Force demo mode if Firebase fails
+                settings.demo_mode = True
+                logger.info("🎯 VitalSync backend started in DEMO MODE (fallback)")
         else:
             logger.info("🎯 VitalSync backend started in DEMO MODE")
     except Exception as e:
         logger.error(f"Failed to start application: {str(e)}")
-        raise
+        # Don't raise - allow app to start in demo mode
+        settings.demo_mode = True
+        logger.info("🎯 VitalSync backend started in DEMO MODE (error fallback)")
 
 # Health check endpoint
 @app.get("/health")

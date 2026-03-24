@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
-        extra = "allow"  # Allow extra fields
+        extra = "allow"
+        # Allow mutation so we can change demo_mode at runtime
+        validate_assignment = False
 
 settings = Settings()
