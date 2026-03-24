@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+.env
+serviceAccountKey.json
+saathi-f94ab-firebase-adminsdk-fbsvc-27f9b9ab59.json
+*.json
+!examples/*.json
+*.log
+.DS_Store

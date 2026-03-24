@@ -1,0 +1,18 @@
+{
+  "alert_types": [
+    "FALL",
+    "LOW_SPO2",
+    "HIGH_HEART_RATE",
+    "MANUAL_SOS"
+  ],
+  "severity_levels": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
+  "severity_actions": {
+    "LOW": ["SMS notification"],
+    "MEDIUM": ["SMS notification", "Event logging"],
+    "HIGH": ["SMS notification", "Emergency call", "High priority alert"]
+  }
+}

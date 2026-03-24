@@ -1,0 +1,9 @@
+{
+  "patientId": "patient_001",
+  "heartRateAvg": 75.5,
+  "spo2Avg": 98.2,
+  "steps": 8500,
+  "sleepHours": 7.5,
+  "temperatureAvg": 36.8,
+  "date": "2024-03-24"
+}

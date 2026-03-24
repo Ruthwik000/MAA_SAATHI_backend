@@ -1,0 +1,99 @@
+╔══════════════════════════════════════════════════════════════╗
+║           VitalSync Backend - Quick Reference                ║
+╚══════════════════════════════════════════════════════════════╝
+
+🚀 START SERVER
+───────────────
+uvicorn app.main:app --reload
+
+📍 SERVER URL
+─────────────
+http://localhost:8000
+
+📚 API DOCS
+───────────
+http://localhost:8000/docs
+
+🧪 RUN TESTS
+────────────
+python test_api.py
+
+✅ VERIFY SETUP
+───────────────
+python verify_structure.py
+
+🔥 FIREBASE
+───────────
+Credentials: saathi-f94ab-firebase-adminsdk-fbsvc-27f9b9ab59.json
+Status: Connected ✅
+
+📡 KEY ENDPOINTS
+────────────────
+Health Check:
+  GET /health
+
+IoT Data:
+  POST /api/v1/iot/daily-vitals
+
+Get Vitals:
+  GET /api/v1/health/daily-vitals/{patientId}
+
+Health Check:
+  POST /api/v1/health/check/{patientId}
+
+Health Report:
+  GET /api/v1/health/report/{patientId}
+
+Emergency Alert:
+  POST /api/v1/emergency/sos
+
+Get Alerts:
+  GET /api/v1/alerts/{patientId}
+
+📁 PROJECT STRUCTURE
+────────────────────
+app/
+├── routes/          # API endpoints
+├── controllers/     # Request handlers
+├── services/        # Business logic
+├── schemas/         # Data models
+├── config/          # Configuration
+└── utils/           # Utilities
+
+📖 DOCUMENTATION
+────────────────
+README.md              - Quick start
+SETUP.md               - Detailed setup
+API_DOCUMENTATION.md   - API reference
+DEPLOYMENT.md          - Production guide
+PROJECT_SUMMARY.md     - Overview
+STATUS.md              - Current status
+
+🎯 STATUS
+─────────
+✅ All dependencies installed
+✅ Firebase connected
+✅ Server running
+✅ All tests passing
+✅ Ready for frontend integration
+
+💡 QUICK TEST
+─────────────
+curl http://localhost:8000/health
+
+Expected: {"status":"ok","service":"VitalSync"}
+
+🔧 TROUBLESHOOTING
+──────────────────
+Port in use:
+  Change port: uvicorn app.main:app --port 8001
+
+Firebase error:
+  Check: saathi-f94ab-firebase-adminsdk-fbsvc-27f9b9ab59.json
+
+Module error:
+  Run: pip install -r requirements.txt
+
+═══════════════════════════════════════════════════════════════
+                    BACKEND READY ✅
+═══════════════════════════════════════════════════════════════
