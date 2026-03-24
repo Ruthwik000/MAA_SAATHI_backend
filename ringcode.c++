@@ -8,17 +8,52 @@
 #include <Adafruit_AHTX0.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
 // --- WIFI & API CONFIGURATION ---
 const char* WIFI_SSID = "Hotspot";
 const char* WIFI_PASSWORD = "12345678";
-const char* API_BASE_URL = "http://192.168.43.1:8000";
+const char* API_BASE_URL = "https://maa-saathi-backend.onrender.com";  // Live Render backend
 const char* PATIENT_ID = "patient_demo";
 
 // --- EMERGENCY CONTACTS (Real numbers for SMS/Call) ---
 const char* DOCTOR_NUMBER = "+918328217825";  // Your phone number
 const char* FAMILY_NUMBER = "+918328217825";  // Same number for demo
+
+// --- ROOT CA CERTIFICATE (Cloudflare/Render) ---
+const char* rootCACertificate = \
+"-----BEGIN CERTIFICATE-----\n" \
+"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\n" \
+"-----END CERTIFICATE-----\n";
 
 // --- PIN DEFINITIONS ---
 #define LM35_PIN 34
@@ -302,65 +337,89 @@ void updateSerial() {
 
 void sendEmergencyAlert(String alertType, String severity) {
   if(!wifiConnected) {
-    Serial.println("WiFi not connected!");
+    Serial.println("❌ WiFi not connected!");
     return;
   }
 
-  HTTPClient http;
-  String url = String(API_BASE_URL) + "/api/v1/emergency/sos";
-  http.begin(url);
-  http.addHeader("Content-Type", "application/json");
-
-  float lat = gps.location.isValid() ? gps.location.lat() : 28.6139;
-  float lng = gps.location.isValid() ? gps.location.lng() : 77.2090;
-
-  // Real emergency alert - will trigger SMS + Call via Twilio
-  StaticJsonDocument<512> doc;
-  doc["patientId"] = PATIENT_ID;
-  doc["type"] = alertType;
-  doc["severity"] = severity;
-  
-  JsonObject location = doc.createNestedObject("location");
-  location["lat"] = lat;
-  location["lng"] = lng;
-  
-  // Real phone numbers - will receive SMS and Call
-  doc["doctorNumber"] = DOCTOR_NUMBER;
-  JsonArray familyNumbers = doc.createNestedArray("familyNumbers");
-  familyNumbers.add(FAMILY_NUMBER);
-
-  String payload;
-  serializeJson(doc, payload);
-
-  Serial.println("🚨 Sending Emergency Alert to Backend:");
-  Serial.println(payload);
-
-  int httpCode = http.POST(payload);
-
-  if(httpCode == 200) {
-    Serial.println("✅ Emergency Alert Sent!");
-    Serial.println("📱 SMS + Call triggered to emergency contacts!");
+  WiFiClientSecure *client = new WiFiClientSecure;
+  if(client) {
+    // Use root CA certificate for SSL verification
+    client->setCACert(rootCACertificate);
+    client->setTimeout(15);
     
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setCursor(5, 15);
-    display.println("ALERT");
-    display.println("SENT!");
-    display.setTextSize(1);
-    display.setCursor(5, 50);
-    display.println("SMS+Call sent");
-    display.display();
-  } else {
-    Serial.printf("❌ Alert failed! HTTP Code: %d\n", httpCode);
+    HTTPClient http;
+    String url = String(API_BASE_URL) + "/api/v1/emergency/sos";
     
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setCursor(5, 25);
-    display.println("Alert Failed!");
-    display.display();
+    Serial.println("🔗 Connecting to: " + url);
+    
+    if(http.begin(*client, url)) {
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("User-Agent", "ESP32-VitalSync");
+      http.setTimeout(20000);
+      http.setConnectTimeout(10000);
+
+      float lat = gps.location.isValid() ? gps.location.lat() : 28.6139;
+      float lng = gps.location.isValid() ? gps.location.lng() : 77.2090;
+
+      StaticJsonDocument<512> doc;
+      doc["patientId"] = PATIENT_ID;
+      doc["type"] = alertType;
+      doc["severity"] = severity;
+      
+      JsonObject location = doc.createNestedObject("location");
+      location["lat"] = lat;
+      location["lng"] = lng;
+      
+      doc["doctorNumber"] = DOCTOR_NUMBER;
+      JsonArray familyNumbers = doc.createNestedArray("familyNumbers");
+      familyNumbers.add(FAMILY_NUMBER);
+
+      String payload;
+      serializeJson(doc, payload);
+
+      Serial.println("📤 Payload: " + String(payload.length()) + " bytes");
+      Serial.println(payload);
+      Serial.println("⏳ Sending POST request...");
+      
+      int httpCode = http.POST(payload);
+      
+      Serial.printf("📊 HTTP Response Code: %d\n", httpCode);
+
+      if(httpCode > 0) {
+        String response = http.getString();
+        Serial.println("📥 Response: " + response);
+        
+        if(httpCode == 200) {
+          Serial.println("✅ ALERT SENT! SMS + Call triggered!");
+          
+          display.clearDisplay();
+          display.setTextSize(2);
+          display.setCursor(5, 15);
+          display.println("ALERT");
+          display.println("SENT!");
+          display.setTextSize(1);
+          display.setCursor(5, 50);
+          display.println("SMS+Call sent");
+          display.display();
+          delay(3000);
+        }
+      } else {
+        Serial.printf("❌ Error: %d - %s\n", httpCode, http.errorToString(httpCode).c_str());
+        
+        display.clearDisplay();
+        display.setTextSize(1);
+        display.setCursor(5, 15);
+        display.println("Alert Failed!");
+        display.printf("Error: %d\n", httpCode);
+        display.display();
+        delay(3000);
+      }
+
+      http.end();
+    }
+    
+    delete client;
   }
-
-  http.end();
 }
 
 void sendEmergencyViaBackend(String alertType, String severity) {
@@ -384,28 +443,45 @@ void sendEmergencyViaBackend(String alertType, String severity) {
 void uploadDailyVitals() {
   if(!wifiConnected) return;
 
-  HTTPClient http;
-  String url = String(API_BASE_URL) + "/api/v1/iot/daily-vitals";
-  http.begin(url);
-  http.addHeader("Content-Type", "application/json");
+  WiFiClientSecure *client = new WiFiClientSecure;
+  if(client) {
+    client->setCACert(rootCACertificate);
+    client->setTimeout(10);
+    
+    HTTPClient http;
+    String url = String(API_BASE_URL) + "/api/v1/iot/daily-vitals";
+    
+    if(http.begin(*client, url)) {
+      http.addHeader("Content-Type", "application/json");
+      http.setTimeout(10000);
 
-  StaticJsonDocument<256> doc;
-  doc["patientId"] = PATIENT_ID;
-  doc["heartRateAvg"] = (float)finalHR;
-  doc["spo2Avg"] = (float)finalSpO2;
-  doc["steps"] = totalSteps;
-  doc["sleepHours"] = 7.5;
-  doc["temperatureAvg"] = finalTemp;
-  doc["date"] = "2024-03-24";
+      StaticJsonDocument<256> doc;
+      doc["patientId"] = PATIENT_ID;
+      doc["heartRateAvg"] = (float)finalHR;
+      doc["spo2Avg"] = (float)finalSpO2;
+      doc["steps"] = totalSteps;
+      doc["sleepHours"] = 7.5;
+      doc["temperatureAvg"] = finalTemp;
+      doc["date"] = "2024-03-24";
 
-  String payload;
-  serializeJson(doc, payload);
-  
-  int httpCode = http.POST(payload);
-  if(httpCode == 200) {
-    Serial.println("✅ Vitals uploaded!");
+      String payload;
+      serializeJson(doc, payload);
+      
+      int httpCode = http.POST(payload);
+      
+      if(httpCode == 200) {
+        Serial.println("✅ Vitals uploaded to Firestore!");
+      } else if(httpCode > 0) {
+        Serial.printf("⚠️ Vitals upload: %d\n", httpCode);
+      } else {
+        Serial.printf("❌ Vitals upload failed: %d\n", httpCode);
+      }
+      
+      http.end();
+    }
+    
+    delete client;
   }
-  http.end();
 }
 
 void checkAbnormalVitals() {

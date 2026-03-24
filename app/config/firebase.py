@@ -2,7 +2,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from app.config.settings import settings
 from app.utils.logger import logger
-import json
 
 _db = None
 
@@ -11,13 +10,22 @@ def initialize_firebase():
     global _db
     try:
         if not firebase_admin._apps:
-            # Use credentials from environment variable
-            if settings.firebase_credentials_json:
-                logger.info("Loading Firebase credentials from environment variable")
-                cred_dict = json.loads(settings.firebase_credentials_json)
+            # Build credentials from individual environment variables
+            if settings.firebase_project_id and settings.firebase_private_key and settings.firebase_client_email:
+                logger.info("Loading Firebase credentials from environment variables")
+                
+                # Build credential dict
+                cred_dict = {
+                    "type": "service_account",
+                    "project_id": settings.firebase_project_id,
+                    "private_key": settings.firebase_private_key.replace('\\n', '\n'),  # Fix newlines
+                    "client_email": settings.firebase_client_email,
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                }
+                
                 cred = credentials.Certificate(cred_dict)
             else:
-                raise ValueError("FIREBASE_CREDENTIALS_JSON environment variable not set")
+                raise ValueError("Firebase credentials not configured in environment variables")
             
             firebase_admin.initialize_app(cred)
             logger.info("Firebase initialized successfully")
